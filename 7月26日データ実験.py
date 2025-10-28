@@ -7,7 +7,8 @@ Original file is located at
     https://colab.research.google.com/drive/11PqIn3pdOwb6AT4_Y1uV4FEz_10cVgld
 """
 
-!pip install mip
+pip install mip
+
 !pip install pulp
 !pip install openpyxl
 !pip install googlemaps pandas

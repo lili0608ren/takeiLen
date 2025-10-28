@@ -33,6 +33,8 @@ import requests
 import time
 import numpy as np
 import googlemaps
+import streamlit as st
+
 from ortools.linear_solver import pywraplp  # 使うなら
 
 # ===============================

@@ -8,23 +8,41 @@ Original file is located at
 """
 
 
-!pip install mip
-!pip install pulp
-!pip install openpyxl
-!pip install googlemaps pandas
-!pip install googlemaps
-!pip install ortools
+# ===============================
+# ライブラリ自動チェック（Colab/Streamlit両対応）
+# ===============================
+import importlib, os
 
+def safe_import(package_name):
+    """ライブラリが未インストールなら自動でpip install"""
+    try:
+        importlib.import_module(package_name)
+    except ImportError:
+        os.system(f"pip install {package_name}")
+        importlib.import_module(package_name)
+
+# 使用ライブラリ一覧
+for pkg in ["mip", "pulp", "openpyxl", "googlemaps", "pandas", "numpy", "ortools"]:
+    safe_import(pkg)
+
+# ===============================
+# インポート
+# ===============================
 import pandas as pd
 import requests
 import time
-import os
 import numpy as np
+import googlemaps
+from ortools.linear_solver import pywraplp  # 使うなら
 
+# ===============================
+# 定数設定
+# ===============================
 API_KEY = "AIzaSyB4nwVCsxX0kLRl3Mp9xnyPgaNpXitw16k"
 EXCEL_PATH = "7月26日データ.xlsx"
-LATLNG_CACHE_PATH = "住所キャッシュ26.csv"  #各住所の「緯度・経度」
-DURATION_CACHE_PATH = "duration_cache26.csv"  #各地点ペア間の「移動時間（秒）」
+LATLNG_CACHE_PATH = "住所キャッシュ26.csv"   # 各住所の「緯度・経度」
+DURATION_CACHE_PATH = "duration_cache26.csv" # 各地点ペア間の「移動時間（秒）」
+
 
 # 住所→緯度経度キャッシュ
 def load_latlng_cache():

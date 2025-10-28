@@ -42,6 +42,8 @@ API_KEY = "AIzaSyB4nwVCsxX0kLRl3Mp9xnyPgaNpXitw16k"
 EXCEL_PATH = "7月26日データ.xlsx"
 LATLNG_CACHE_PATH = "住所キャッシュ26.csv"   # 各住所の「緯度・経度」
 DURATION_CACHE_PATH = "duration_cache26.csv" # 各地点ペア間の「移動時間（秒）」
+st.write(df.columns)  # カラム（列名）の一覧を表示
+st.write(df.index)    # インデックス（行ラベル）の一覧を表示
 
 
 # 住所→緯度経度キャッシュ

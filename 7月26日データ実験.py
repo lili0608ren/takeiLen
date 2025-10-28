@@ -22,7 +22,7 @@ def safe_import(package_name):
         importlib.import_module(package_name)
 
 # 使用ライブラリ一覧
-for pkg in ["mip", "pulp", "openpyxl", "googlemaps", "pandas", "numpy", "ortools"]:
+for pkg in ["pulp", "openpyxl", "googlemaps", "pandas", "numpy", "ortools"]:
     safe_import(pkg)
 
 # ===============================

@@ -171,12 +171,27 @@ addresses = df_addr["住所"].tolist()
 latlng_cache = load_latlng_cache()
 locations = [get_latlng(addr, latlng_cache) for addr in addresses]
 save_latlng_cache(latlng_cache)
-
 duration_cache_df = load_duration_cache()
-duration_matrix = build_duration_matrix(locations, duration_cache_df)
+with st.spinner("距離行列を作成中...（初回は時間がかかります）"):
+    duration_matrix = build_duration_matrix(locations, duration_cache_df)
 
-print("座標:", locations)
-print("移動時間行列（秒）:\n", duration_matrix)
+# Streamlit 用に表示（デバッグ用）
+st.write("### 読み込んだ住所の数・座標（先頭10件）")
+st.write(f"件数: {len(locations)}")
+st.write(locations[:10])
+
+st.write("### duration_cache_df の先頭（index, columns を表示）")
+st.write("index:", list(duration_cache_df.index[:20]))
+st.write("columns:", list(duration_cache_df.columns[:20]))
+st.dataframe(duration_cache_df.head())
+
+st.write("### 生成した移動時間行列（秒） — 先頭 10x10 を表示")
+import pandas as _pd
+dm_df = _pd.DataFrame(duration_matrix)
+st.dataframe(dm_df.iloc[:10, :10])
+st.write("duration_cache_df.head():")
+st.dataframe(duration_cache_df.head())
+st.write("==== end debug ====")
 
 import pandas as pd
 import numpy as np
@@ -455,8 +470,16 @@ for car_name, trip_list in vehicle_trip_indices.items():
 # ===============================
 # ソルバー実行
 # ===============================
-solver = pulp.PULP_CBC_CMD(msg=1, timeLimit=SOLVER_TIME_LIMIT, threads=4)
-res = prob.solve(solver)
+
+# ソルバー実行（重いので spinner）
+with st.spinner("ソルバー実行中...終了まで待ってください（時間がかかります）"):
+    solver = pulp.PULP_CBC_CMD(msg=1, timeLimit=SOLVER_TIME_LIMIT, threads=4)
+    res = prob.solve(solver)
+
+st.write("### Solver 結果")
+st.write("Status:", pulp.LpStatus[prob.status])
+st.write("Objective:", pulp.value(prob.objective))
+
 print("Solver status:", pulp.LpStatus[prob.status], " objective:", pulp.value(prob.objective))
 
 
@@ -552,6 +575,20 @@ for k, car in enumerate(vehicles):
         current += int(duration_matrix[last_node, 0])
     last_end_times[car["車両名"]] = current
     total_times_map[car["便名"]] = (last_end_times[car["車両名"]] - base_start) // 60
+# 表示用 DataFrame に変換
+if assign_map:
+    df_assign = pd.DataFrame.from_dict(assign_map, orient='index').reset_index().rename(columns={'index':'利用者名'})
+    st.write("### 割当結果（assign_map）")
+    st.dataframe(df_assign)
+else:
+    st.write("割当結果（assign_map）は空です。ソルバーが割当を作れていない可能性があります。")
+
+st.write("### 便ごとのルート（routes_by_k の抜粋）")
+sample_routes = {k: routes_by_k[k] for k in list(routes_by_k)[:20]}
+st.write(sample_routes)
+
+st.write("### 各便の合計移動時間（分）")
+st.write(total_times_map)
 
 # ----- 違反チェック（元コードと同じロジック。ただし to_seconds の強化に対応） -----
 violations = []

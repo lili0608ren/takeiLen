@@ -94,19 +94,50 @@ def save_duration_cache(df):
 def build_duration_matrix(locations, cache_df=None):
     n = len(locations)
     matrix = np.zeros((n, n), dtype=int)
+
+    # --- cache_df の整形 ---
     if cache_df is None or cache_df.empty:
         cache_df = pd.DataFrame(index=range(n), columns=range(n))
+    else:
+        cache_df = cache_df.copy()
+
+        if "Unnamed: 0" in cache_df.columns:
+            try:
+                cache_df = cache_df.set_index("Unnamed: 0")
+            except Exception:
+                pass
+
+        def try_int_index(idx):
+            try:
+                return [int(x) for x in idx]
+            except Exception:
+                return idx
+
+        cache_df.index = try_int_index(cache_df.index)
+        cache_df.columns = try_int_index(cache_df.columns)
+        cache_df = cache_df.reindex(index=range(n), columns=range(n))
+
+    # --- 実際の行列作成 ---
     for i in range(n):
         for j in range(n):
             if i == j:
                 matrix[i, j] = 0
                 continue
-            if cache_df.loc[i, j] is not None and not pd.isna(cache_df.loc[i, j]):
-                matrix[i, j] = int(cache_df.loc[i, j])
+
+            val = cache_df.at[i, j] if (i in cache_df.index and j in cache_df.columns) else None
+
+            if val is not None and not pd.isna(val):
+                try:
+                    matrix[i, j] = int(val)
+                except Exception:
+                    matrix[i, j] = int(float(val))
                 continue
+
+            # APIで新規取得（既存コードに合わせる）
             origin = f"{locations[i][0]},{locations[i][1]}"
             destination = f"{locations[j][0]},{locations[j][1]}"
             url = f"https://maps.googleapis.com/maps/api/distancematrix/json?origins={origin}&destinations={destination}&key={API_KEY}"
+
             for attempt in range(3):
                 try:
                     resp = requests.get(url, timeout=30).json()
@@ -115,19 +146,23 @@ def build_duration_matrix(locations, cache_df=None):
                     if attempt == 2:
                         raise
                     time.sleep(1)
+
             if resp.get("status") == "OK" and resp.get("rows"):
                 el = resp["rows"][0]["elements"][0]
-                if el.get("status") == "OK":
+                if el.get("status") == "OK" and "duration" in el:
                     duration_sec = int(el["duration"]["value"])
                 else:
                     duration_sec = 10**7
             else:
                 duration_sec = 10**7
+
             matrix[i, j] = duration_sec
-            cache_df.loc[i, j] = duration_sec
+            cache_df.at[i, j] = duration_sec
             time.sleep(0.1)
+
     save_duration_cache(cache_df)
     return matrix
+
 
 # 実Excelから住所リスト自動抽出
 df_addr = pd.read_excel(EXCEL_PATH, sheet_name="利用者に住所")

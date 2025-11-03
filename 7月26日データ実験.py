@@ -175,23 +175,7 @@ duration_cache_df = load_duration_cache()
 with st.spinner("距離行列を作成中...（初回は時間がかかります）"):
     duration_matrix = build_duration_matrix(locations, duration_cache_df)
 
-# Streamlit 用に表示（デバッグ用）
-st.write("### 読み込んだ住所の数・座標（先頭10件）")
-st.write(f"件数: {len(locations)}")
-st.write(locations[:10])
 
-st.write("### duration_cache_df の先頭（index, columns を表示）")
-st.write("index:", list(duration_cache_df.index[:20]))
-st.write("columns:", list(duration_cache_df.columns[:20]))
-st.dataframe(duration_cache_df.head())
-
-st.write("### 生成した移動時間行列（秒） — 先頭 10x10 を表示")
-import pandas as _pd
-dm_df = _pd.DataFrame(duration_matrix)
-st.dataframe(dm_df.iloc[:10, :10])
-st.write("duration_cache_df.head():")
-st.dataframe(duration_cache_df.head())
-st.write("==== end debug ====")
 
 import pandas as pd
 import numpy as np
@@ -203,8 +187,7 @@ import pandas as pd
 
 # Excel読み込み（ファイル名やシート名は適宜置き換え）
 df = pd.read_excel('7月26日データ.xlsx')
-st.write(df.columns)  # カラム（列名）の一覧を表示
-st.write(df.index)    # インデックス（行ラベル）の一覧を表示
+
 
 # ここで列名一覧を確認
 print(df.columns)
@@ -583,9 +566,23 @@ if assign_map:
 else:
     st.write("割当結果（assign_map）は空です。ソルバーが割当を作れていない可能性があります。")
 
-st.write("### 便ごとのルート（routes_by_k の抜粋）")
-sample_routes = {k: routes_by_k[k] for k in list(routes_by_k)[:20]}
-st.write(sample_routes)
+node_to_user = {i+1: users[i] for i in range(n_users)}  # 1スタート
+def get_route_names(route, node_to_user):
+    names = []
+    for idx in route:
+        if idx == 0:
+            names.append("デポ")
+        else:
+            names.append(node_to_user.get(idx, f"[{idx}]"))
+    return names
+st.write("### 便ごとのルート（利用者名で表示）")
+sample_routes = {k: routes_by_k[k] for k in list(routes_by_k)[:20]}  # 20便まで
+for k, route in sample_routes.items():
+    vehicle_name = vehicles[k]["車両名"]
+    bin_name = vehicles[k]["便名"]
+    name_route = get_route_names(route, node_to_user)
+    st.write(f"【{bin_name}】{vehicle_name} のルート： {' → '.join(name_route)}")
+
 
 st.write("### 各便の合計移動時間（分）")
 st.write(total_times_map)
